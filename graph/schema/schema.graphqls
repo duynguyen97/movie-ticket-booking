@@ -1,0 +1,16 @@
+# GraphQL schema for movie ticket booking system
+
+type Query {
+  # Health check query
+  ping: String!
+}
+
+type Mutation {
+  # Placeholder mutation
+  dummy: String!
+}
+
+type Subscription {
+  # Placeholder subscription
+  dummy: String!
+}
