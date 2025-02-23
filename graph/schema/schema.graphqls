@@ -6,11 +6,41 @@ type Query {
 }
 
 type Mutation {
-  # Placeholder mutation
-  dummy: String!
+  # User registration
+  register(input: RegisterInput!): RegisterResponse!
+  
+  # User login
+  login(input: LoginInput!): LoginResponse!
 }
 
 type Subscription {
   # Placeholder subscription
   dummy: String!
+}
+
+input RegisterInput {
+  email: String!
+  password: String!
+  name: String!
+  phone: String!
+}
+
+type RegisterResponse {
+  user: User!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type LoginResponse {
+  token: String!
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  phone: String!
 }
