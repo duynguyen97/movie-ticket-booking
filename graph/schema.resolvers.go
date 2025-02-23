@@ -8,11 +8,37 @@ import (
 	"context"
 	"fmt"
 	"movie-ticket-booking/graph/generated"
+	"movie-ticket-booking/graph/model"
+	"strconv"
 )
 
-// Dummy is the resolver for the dummy field.
-func (r *mutationResolver) Dummy(ctx context.Context) (string, error) {
-	panic(fmt.Errorf("not implemented: Dummy - dummy"))
+// Register is the resolver for the register field.
+func (r *mutationResolver) Register(ctx context.Context, input model.RegisterInput) (*model.RegisterResponse, error) {
+	user, err := r.authService.Register(input.Email, input.Password, input.Name, input.Phone)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.RegisterResponse{
+		User: &model.User{
+			ID:    strconv.FormatUint(uint64(user.ID), 10),
+			Email: user.Email,
+			Name:  user.Name,
+			Phone: user.Phone,
+		},
+	}, nil
+}
+
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.LoginResponse, error) {
+	token, err := r.authService.Login(input.Email, input.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.LoginResponse{
+		Token: token,
+	}, nil
 }
 
 // Ping is the resolver for the ping field.

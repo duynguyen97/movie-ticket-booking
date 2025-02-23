@@ -28,7 +28,7 @@ func NewConfig() *Config {
 			Port:     5432,
 			User:     "postgres",
 			Password: "postgres",
-			DBName:   "movie_ticket",
+			DBName:   "movie_ticket_booking",
 			SSLMode:  "disable",
 		},
 		Redis: RedisConfig{
