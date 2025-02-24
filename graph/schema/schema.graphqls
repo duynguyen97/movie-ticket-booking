@@ -3,6 +3,18 @@
 type Query {
   # Health check query
   ping: String!
+  # Get all movies
+  movies: [Movie!]!
+  # Get a specific movie by ID
+  movie(id: ID!): Movie
+  # Get all showtimes
+  showtimes: [Showtime!]!
+  # Get showtimes for a specific movie
+  movieShowtimes(movieId: ID!): [Showtime!]!
+  # Get booking by ID
+  booking(id: ID!): Booking
+  # Get user's bookings
+  myBookings: [Booking!]!
 }
 
 type Mutation {
@@ -11,11 +23,78 @@ type Mutation {
   
   # User login
   login(input: LoginInput!): LoginResponse!
+
+  # Create a new booking
+  createBooking(input: BookingInput!): Booking!
+  
+  # Cancel a booking
+  cancelBooking(id: ID!): Boolean!
 }
 
 type Subscription {
-  # Placeholder subscription
-  dummy: String!
+  # Real-time seat availability updates
+  seatUpdates(showtimeId: ID!): [Seat!]!
+}
+
+type Movie {
+  id: ID!
+  title: String!
+  description: String!
+  duration: Int!
+  genre: String!
+  releaseDate: String!
+  posterUrl: String
+  showtimes: [Showtime!]!
+}
+
+type Showtime {
+  id: ID!
+  movie: Movie!
+  startTime: String!
+  endTime: String!
+  hall: Hall!
+  price: Float!
+  availableSeats: [Seat!]!
+}
+
+type Hall {
+  id: ID!
+  name: String!
+  capacity: Int!
+  seats: [Seat!]!
+}
+
+type Seat {
+  id: ID!
+  row: String!
+  number: Int!
+  status: SeatStatus!
+}
+
+enum SeatStatus {
+  AVAILABLE
+  RESERVED
+  BOOKED
+}
+
+type Booking {
+  id: ID!
+  user: User!
+  showtime: Showtime!
+  seats: [Seat!]!
+  totalAmount: Float!
+  status: BookingStatus!
+  createdAt: String!
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+input BookingInput {
+  showtimeId: ID!
+  seatIds: [ID!]!
 }
 
 input RegisterInput {
@@ -43,4 +122,5 @@ type User {
   email: String!
   name: String!
   phone: String!
+  bookings: [Booking!]!
 }

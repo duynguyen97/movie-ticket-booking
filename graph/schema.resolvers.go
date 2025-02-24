@@ -41,14 +41,54 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 	}, nil
 }
 
+// CreateBooking is the resolver for the createBooking field.
+func (r *mutationResolver) CreateBooking(ctx context.Context, input model.BookingInput) (*model.Booking, error) {
+	panic(fmt.Errorf("not implemented: CreateBooking - createBooking"))
+}
+
+// CancelBooking is the resolver for the cancelBooking field.
+func (r *mutationResolver) CancelBooking(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: CancelBooking - cancelBooking"))
+}
+
 // Ping is the resolver for the ping field.
 func (r *queryResolver) Ping(ctx context.Context) (string, error) {
 	panic(fmt.Errorf("not implemented: Ping - ping"))
 }
 
-// Dummy is the resolver for the dummy field.
-func (r *subscriptionResolver) Dummy(ctx context.Context) (<-chan string, error) {
-	panic(fmt.Errorf("not implemented: Dummy - dummy"))
+// Movies is the resolver for the movies field.
+func (r *queryResolver) Movies(ctx context.Context) ([]*model.Movie, error) {
+	panic(fmt.Errorf("not implemented: Movies - movies"))
+}
+
+// Movie is the resolver for the movie field.
+func (r *queryResolver) Movie(ctx context.Context, id string) (*model.Movie, error) {
+	panic(fmt.Errorf("not implemented: Movie - movie"))
+}
+
+// Showtimes is the resolver for the showtimes field.
+func (r *queryResolver) Showtimes(ctx context.Context) ([]*model.Showtime, error) {
+	panic(fmt.Errorf("not implemented: Showtimes - showtimes"))
+}
+
+// MovieShowtimes is the resolver for the movieShowtimes field.
+func (r *queryResolver) MovieShowtimes(ctx context.Context, movieID string) ([]*model.Showtime, error) {
+	panic(fmt.Errorf("not implemented: MovieShowtimes - movieShowtimes"))
+}
+
+// Booking is the resolver for the booking field.
+func (r *queryResolver) Booking(ctx context.Context, id string) (*model.Booking, error) {
+	panic(fmt.Errorf("not implemented: Booking - booking"))
+}
+
+// MyBookings is the resolver for the myBookings field.
+func (r *queryResolver) MyBookings(ctx context.Context) ([]*model.Booking, error) {
+	panic(fmt.Errorf("not implemented: MyBookings - myBookings"))
+}
+
+// SeatUpdates is the resolver for the seatUpdates field.
+func (r *subscriptionResolver) SeatUpdates(ctx context.Context, showtimeID string) (<-chan []*model.Seat, error) {
+	panic(fmt.Errorf("not implemented: SeatUpdates - seatUpdates"))
 }
 
 // Mutation returns generated.MutationResolver implementation.
@@ -63,3 +103,15 @@ func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subsc
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *subscriptionResolver) Dummy(ctx context.Context) (<-chan string, error) {
+	panic(fmt.Errorf("not implemented: Dummy - dummy"))
+}
+*/

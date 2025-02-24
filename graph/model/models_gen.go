@@ -2,6 +2,34 @@
 
 package model
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
+type Booking struct {
+	ID          string        `json:"id"`
+	User        *User         `json:"user"`
+	Showtime    *Showtime     `json:"showtime"`
+	Seats       []*Seat       `json:"seats"`
+	TotalAmount float64       `json:"totalAmount"`
+	Status      BookingStatus `json:"status"`
+	CreatedAt   string        `json:"createdAt"`
+}
+
+type BookingInput struct {
+	ShowtimeID string   `json:"showtimeId"`
+	SeatIds    []string `json:"seatIds"`
+}
+
+type Hall struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Capacity int     `json:"capacity"`
+	Seats    []*Seat `json:"seats"`
+}
+
 type LoginInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -9,6 +37,17 @@ type LoginInput struct {
 
 type LoginResponse struct {
 	Token string `json:"token"`
+}
+
+type Movie struct {
+	ID          string      `json:"id"`
+	Title       string      `json:"title"`
+	Description string      `json:"description"`
+	Duration    int         `json:"duration"`
+	Genre       string      `json:"genre"`
+	ReleaseDate string      `json:"releaseDate"`
+	PosterURL   *string     `json:"posterUrl,omitempty"`
+	Showtimes   []*Showtime `json:"showtimes"`
 }
 
 type Mutation struct {
@@ -28,12 +67,114 @@ type RegisterResponse struct {
 	User *User `json:"user"`
 }
 
+type Seat struct {
+	ID     string     `json:"id"`
+	Row    string     `json:"row"`
+	Number int        `json:"number"`
+	Status SeatStatus `json:"status"`
+}
+
+type Showtime struct {
+	ID             string  `json:"id"`
+	Movie          *Movie  `json:"movie"`
+	StartTime      string  `json:"startTime"`
+	EndTime        string  `json:"endTime"`
+	Hall           *Hall   `json:"hall"`
+	Price          float64 `json:"price"`
+	AvailableSeats []*Seat `json:"availableSeats"`
+}
+
 type Subscription struct {
 }
 
 type User struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	Phone string `json:"phone"`
+	ID       string     `json:"id"`
+	Email    string     `json:"email"`
+	Name     string     `json:"name"`
+	Phone    string     `json:"phone"`
+	Bookings []*Booking `json:"bookings"`
+}
+
+type BookingStatus string
+
+const (
+	BookingStatusConfirmed BookingStatus = "CONFIRMED"
+	BookingStatusCancelled BookingStatus = "CANCELLED"
+)
+
+var AllBookingStatus = []BookingStatus{
+	BookingStatusConfirmed,
+	BookingStatusCancelled,
+}
+
+func (e BookingStatus) IsValid() bool {
+	switch e {
+	case BookingStatusConfirmed, BookingStatusCancelled:
+		return true
+	}
+	return false
+}
+
+func (e BookingStatus) String() string {
+	return string(e)
+}
+
+func (e *BookingStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = BookingStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid BookingStatus", str)
+	}
+	return nil
+}
+
+func (e BookingStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type SeatStatus string
+
+const (
+	SeatStatusAvailable SeatStatus = "AVAILABLE"
+	SeatStatusReserved  SeatStatus = "RESERVED"
+	SeatStatusBooked    SeatStatus = "BOOKED"
+)
+
+var AllSeatStatus = []SeatStatus{
+	SeatStatusAvailable,
+	SeatStatusReserved,
+	SeatStatusBooked,
+}
+
+func (e SeatStatus) IsValid() bool {
+	switch e {
+	case SeatStatusAvailable, SeatStatusReserved, SeatStatusBooked:
+		return true
+	}
+	return false
+}
+
+func (e SeatStatus) String() string {
+	return string(e)
+}
+
+func (e *SeatStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SeatStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SeatStatus", str)
+	}
+	return nil
+}
+
+func (e SeatStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
