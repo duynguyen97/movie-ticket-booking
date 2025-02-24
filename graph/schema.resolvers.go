@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"movie-ticket-booking/graph/generated"
 	"movie-ticket-booking/graph/model"
+	"movie-ticket-booking/internal/middleware"
 	"strconv"
 	"time"
 )
@@ -44,12 +45,63 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 
 // CreateBooking is the resolver for the createBooking field.
 func (r *mutationResolver) CreateBooking(ctx context.Context, input model.BookingInput) (*model.Booking, error) {
-	panic(fmt.Errorf("not implemented: CreateBooking - createBooking"))
+	// Get user ID from context
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	// Convert string IDs to uint
+	showtimeID, err := strconv.ParseUint(input.ShowtimeID, 10, 64)
+	if err != nil || showtimeID == 0 {
+		return nil, fmt.Errorf("invalid showtime ID: %s", input.ShowtimeID)
+	}
+
+	var seatIDs []uint
+	for _, id := range input.SeatIds {
+		seatID, err := strconv.ParseUint(id, 10, 64)
+		if err != nil || seatID == 0 {
+			return nil, fmt.Errorf("invalid seat ID: %s", id)
+		}
+		seatIDs = append(seatIDs, uint(seatID))
+	}
+
+	// Create booking
+	booking, err := r.bookingService.CreateBooking(ctx, userID, uint(showtimeID), seatIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to GraphQL model
+	return &model.Booking{
+		ID:          strconv.FormatUint(uint64(booking.ID), 10),
+		TotalAmount: booking.TotalAmount,
+		Status:      model.BookingStatus(booking.Status),
+		CreatedAt:   booking.CreatedAt.Format(time.RFC3339),
+	}, nil
 }
 
 // CancelBooking is the resolver for the cancelBooking field.
 func (r *mutationResolver) CancelBooking(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: CancelBooking - cancelBooking"))
+	// Get user ID from context using middleware function
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return false, fmt.Errorf("unauthorized")
+	}
+
+	// Convert booking ID to uint
+	bookingID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return false, fmt.Errorf("invalid booking ID")
+	}
+
+	// Cancel booking
+	err = r.bookingService.CancelBooking(ctx, uint(bookingID), userID)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // Ping is the resolver for the ping field.
@@ -135,12 +187,64 @@ func (r *queryResolver) MovieShowtimes(ctx context.Context, movieID string) ([]*
 
 // Booking is the resolver for the booking field.
 func (r *queryResolver) Booking(ctx context.Context, id string) (*model.Booking, error) {
-	panic(fmt.Errorf("not implemented: Booking - booking"))
+	// Get user ID from context using middleware function
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	// Convert string ID to uint
+	bookingID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid booking ID")
+	}
+
+	// Get booking using booking service
+	booking, err := r.bookingService.GetBooking(uint(bookingID))
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the booking belongs to the authenticated user
+	if booking.UserID != userID {
+		return nil, fmt.Errorf("unauthorized: booking does not belong to user")
+	}
+
+	// Convert to GraphQL model
+	return &model.Booking{
+		ID:          strconv.FormatUint(uint64(booking.ID), 10),
+		TotalAmount: booking.TotalAmount,
+		Status:      model.BookingStatus(booking.Status),
+		CreatedAt:   booking.CreatedAt.Format(time.RFC3339),
+	}, nil
 }
 
 // MyBookings is the resolver for the myBookings field.
 func (r *queryResolver) MyBookings(ctx context.Context) ([]*model.Booking, error) {
-	panic(fmt.Errorf("not implemented: MyBookings - myBookings"))
+	// Get user ID from context using middleware function
+	userID, ok := middleware.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	// Get user's bookings
+	bookings, err := r.bookingService.GetUserBookings(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to GraphQL model
+	var result []*model.Booking
+	for _, booking := range bookings {
+		result = append(result, &model.Booking{
+			ID:          strconv.FormatUint(uint64(booking.ID), 10),
+			TotalAmount: booking.TotalAmount,
+			Status:      model.BookingStatus(booking.Status),
+			CreatedAt:   booking.CreatedAt.Format(time.RFC3339),
+		})
+	}
+
+	return result, nil
 }
 
 // SeatUpdates is the resolver for the seatUpdates field.

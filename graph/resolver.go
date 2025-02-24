@@ -9,13 +9,15 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	authService  *services.AuthService
-	movieService *services.MovieService
+	authService    *services.AuthService
+	movieService  *services.MovieService
+	bookingService *services.BookingService
 }
 
-func NewResolver(authService *services.AuthService, movieService *services.MovieService) *Resolver {
+func NewResolver(authService *services.AuthService, movieService *services.MovieService, bookingService *services.BookingService) *Resolver {
 	return &Resolver{
-		authService:  authService,
-		movieService: movieService,
+		authService:    authService,
+		movieService:   movieService,
+		bookingService: bookingService,
 	}
 }

@@ -10,23 +10,25 @@ CREATE TABLE users (
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
--- Create halls table
-CREATE TABLE halls (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    capacity INTEGER NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Create movies table
 CREATE TABLE movies (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     duration INTEGER NOT NULL, -- in minutes
+    genre VARCHAR(100) NOT NULL,
     release_date DATE NOT NULL,
     poster_url VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Create halls table
+CREATE TABLE halls (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    capacity INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE
@@ -41,17 +43,21 @@ CREATE TABLE show_times (
     end_time TIMESTAMP WITH TIME ZONE NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Create seats table
 CREATE TABLE seats (
     id SERIAL PRIMARY KEY,
     hall_id INTEGER REFERENCES halls(id) ON DELETE CASCADE,
+    show_time_id INTEGER REFERENCES show_times(id) ON DELETE CASCADE,
     row_number VARCHAR(2) NOT NULL,
     seat_number INTEGER NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE,
     UNIQUE(hall_id, row_number, seat_number)
 );
 
@@ -61,12 +67,37 @@ CREATE TABLE tickets (
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     show_time_id INTEGER REFERENCES show_times(id) ON DELETE CASCADE,
     seat_id INTEGER REFERENCES seats(id) ON DELETE CASCADE,
-    status VARCHAR(20) NOT NULL DEFAULT 'reserved', -- reserved, paid, cancelled
+    status VARCHAR(20) NOT NULL DEFAULT 'reserved',
     booking_code VARCHAR(50) UNIQUE NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE,
     UNIQUE(show_time_id, seat_id)
+);
+
+-- Create bookings table
+CREATE TABLE bookings (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    show_time_id INTEGER REFERENCES show_times(id) ON DELETE CASCADE,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    booked_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Create booking_seats table
+CREATE TABLE booking_seats (
+    id SERIAL PRIMARY KEY,
+    booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
+    seat_id INTEGER REFERENCES seats(id) ON DELETE CASCADE,
+    price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Create indexes
@@ -77,17 +108,44 @@ CREATE INDEX idx_tickets_booking_code ON tickets(booking_code);
 CREATE INDEX idx_tickets_user_id ON tickets(user_id);
 
 -- Insert sample movie data
-INSERT INTO movies (title, description, duration, release_date, poster_url) VALUES
-('The Shawshank Redemption', 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.', 142, '1994-09-23', 'https://example.com/shawshank.jpg'),
-('The Godfather', 'The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.', 175, '1972-03-24', 'https://example.com/godfather.jpg'),
-('Inception', 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.', 148, '2010-07-16', 'https://example.com/inception.jpg'),
-('Pulp Fiction', 'The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine in four tales of violence and redemption.', 154, '1994-10-14', 'https://example.com/pulp-fiction.jpg'),
-('The Dark Knight', 'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.', 152, '2008-07-18', 'https://example.com/dark-knight.jpg'),
-('Forrest Gump', 'The presidencies of Kennedy and Johnson, the Vietnam War, the Watergate scandal and other historical events unfold from the perspective of an Alabama man with an IQ of 75.', 142, '1994-07-06', 'https://example.com/forrest-gump.jpg'),
-('The Matrix', 'A computer programmer discovers that reality as he knows it is a simulation created by machines, and joins a rebellion to break free.', 136, '1999-03-31', 'https://example.com/matrix.jpg'),
-('Interstellar', 'A team of explorers travel through a wormhole in space in an attempt to ensure humanity''s survival.', 169, '2014-11-07', 'https://example.com/interstellar.jpg'),
-('Avatar', 'A paraplegic Marine dispatched to the moon Pandora on a unique mission becomes torn between following his orders and protecting the world he feels is his home.', 162, '2009-12-18', 'https://example.com/avatar.jpg'),
-('The Silence of the Lambs', 'A young F.B.I. cadet must receive the help of an incarcerated and manipulative cannibal killer to help catch another serial killer, a madman who skins his victims.', 118, '1991-02-14', 'https://example.com/silence-lambs.jpg');
+INSERT INTO movies (title, description, duration, genre, release_date, poster_url) VALUES
+('The Shawshank Redemption', 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.', 142, 'Drama', '1994-09-23', 'https://example.com/shawshank.jpg'),
+('The Godfather', 'The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.', 175, 'Crime', '1972-03-24', 'https://example.com/godfather.jpg'),
+('Inception', 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.', 148, 'Sci-Fi', '2010-07-16', 'https://example.com/inception.jpg');
+
+-- Insert sample halls
+INSERT INTO halls (name, capacity) VALUES
+('Hall A', 100),
+('Hall B', 150),
+('Hall C', 200);
+
+-- Insert sample seats for Hall A
+INSERT INTO seats (hall_id, row_number, seat_number, status) 
+SELECT 1, chr(64 + row_num), seat_num, 'AVAILABLE'
+FROM generate_series(1, 10) row_num,
+     generate_series(1, 10) seat_num;
+
+-- Insert sample seats for Hall B
+INSERT INTO seats (hall_id, row_number, seat_number, status)
+SELECT 2, chr(64 + row_num), seat_num, 'AVAILABLE'
+FROM generate_series(1, 10) row_num,
+     generate_series(1, 15) seat_num;
+
+-- Insert sample seats for Hall C
+INSERT INTO seats (hall_id, row_number, seat_number, status)
+SELECT 3, chr(64 + row_num), seat_num, 'AVAILABLE'
+FROM generate_series(1, 10) row_num,
+     generate_series(1, 20) seat_num;
+
+-- Insert sample showtimes
+INSERT INTO show_times (movie_id, hall_id, start_time, end_time, price) VALUES
+(1, 1, CURRENT_TIMESTAMP + interval '1 day', CURRENT_TIMESTAMP + interval '1 day 3 hours', 15.00),
+(2, 2, CURRENT_TIMESTAMP + interval '1 day', CURRENT_TIMESTAMP + interval '1 day 3 hours', 18.00),
+(3, 3, CURRENT_TIMESTAMP + interval '1 day', CURRENT_TIMESTAMP + interval '1 day 3 hours', 20.00);
+
+-- Insert sample user
+INSERT INTO users (email, password, name, phone) VALUES
+('user@example.com', '$2a$10$3QxDjD1ylgPnRgQLhBrTaeGxZHhN9.DpBTPv6L9pB.HxQv2RHllMa', 'Test User', '1234567890');
 
 -- Add triggers for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -125,5 +183,15 @@ CREATE TRIGGER update_seats_updated_at
 
 CREATE TRIGGER update_tickets_updated_at
     BEFORE UPDATE ON tickets
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_bookings_updated_at
+    BEFORE UPDATE ON bookings
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_booking_seats_updated_at
+    BEFORE UPDATE ON booking_seats
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();

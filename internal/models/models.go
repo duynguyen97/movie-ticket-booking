@@ -20,18 +20,13 @@ type Movie struct {
 	Title       string      `gorm:"not null"`
 	Description string      `gorm:"type:text"`
 	Duration    int         `gorm:"not null"` // in minutes
-	Genre       string      `gorm:"not null"`
+	Genre       string      `gorm:"type:varchar(100);not null"`
+	ReleaseDate time.Time   `gorm:"not null"`
+	PosterURL   string      `gorm:"type:varchar(255)"`
 	ShowTimes   []ShowTime  `gorm:"foreignKey:MovieID"`
 }
 
-type ShowTime struct {
-	gorm.Model
-	MovieID   uint      `gorm:"not null"`
-	StartTime time.Time `gorm:"not null"`
-	EndTime   time.Time `gorm:"not null"`
-	HallID    uint      `gorm:"not null"`
-	Seats     []Seat    `gorm:"foreignKey:ShowTimeID"`
-}
+
 
 type Hall struct {
 	gorm.Model
@@ -42,17 +37,20 @@ type Hall struct {
 
 type Seat struct {
 	gorm.Model
+	HallID     uint    `gorm:"not null;uniqueIndex:idx_hall_seat"`
 	ShowTimeID uint    `gorm:"not null"`
-	Number     string  `gorm:"not null"` // e.g., "A1", "B2"
-	Status     string  `gorm:"not null"` // available, booked, reserved
+	RowNumber  string  `gorm:"not null;type:varchar(2);uniqueIndex:idx_hall_seat"` // e.g., "A", "B"
+	SeatNumber int     `gorm:"not null;uniqueIndex:idx_hall_seat"`
+	Status     string  `gorm:"not null;type:varchar(20);default:'AVAILABLE'"` // AVAILABLE, RESERVED, BOOKED
 	Tickets    []Ticket `gorm:"foreignKey:SeatID"`
 }
 
 type Ticket struct {
 	gorm.Model
-	UserID     uint      `gorm:"not null"`
-	SeatID     uint      `gorm:"not null"`
-	Price      float64   `gorm:"not null"`
-	BookedAt   time.Time `gorm:"not null"`
-	Status     string    `gorm:"not null"` // booked, paid, cancelled
+	UserID      uint      `gorm:"not null"`
+	ShowTimeID  uint      `gorm:"not null"`
+	SeatID      uint      `gorm:"not null;uniqueIndex:idx_showtime_seat"`
+	Status      string    `gorm:"not null;type:varchar(20);default:'reserved'"` // reserved, paid, cancelled
+	BookingCode string    `gorm:"not null;type:varchar(50);uniqueIndex"`
+	Price       float64   `gorm:"not null;type:decimal(10,2)"`
 }
