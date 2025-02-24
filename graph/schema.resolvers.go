@@ -10,6 +10,7 @@ import (
 	"movie-ticket-booking/graph/generated"
 	"movie-ticket-booking/graph/model"
 	"strconv"
+	"time"
 )
 
 // Register is the resolver for the register field.
@@ -53,17 +54,73 @@ func (r *mutationResolver) CancelBooking(ctx context.Context, id string) (bool, 
 
 // Ping is the resolver for the ping field.
 func (r *queryResolver) Ping(ctx context.Context) (string, error) {
-	panic(fmt.Errorf("not implemented: Ping - ping"))
+	return "pong", nil
 }
 
 // Movies is the resolver for the movies field.
-func (r *queryResolver) Movies(ctx context.Context) ([]*model.Movie, error) {
-	panic(fmt.Errorf("not implemented: Movies - movies"))
+func (r *queryResolver) Movies(ctx context.Context, page *int, limit *int) (*model.MoviesResponse, error) {
+	// Set default values if not provided
+	pageNum := 1
+	if page != nil {
+		pageNum = *page
+	}
+	limitNum := 10
+	if limit != nil {
+		limitNum = *limit
+	}
+
+	// Calculate offset
+	offset := (pageNum - 1) * limitNum
+
+	// Get paginated movies
+	movies, total, err := r.movieService.GetMovies(offset, limitNum)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to GraphQL model
+	var result []*model.Movie
+	for _, m := range movies {
+		result = append(result, &model.Movie{
+			ID:          strconv.FormatUint(uint64(m.ID), 10),
+			Title:       m.Title,
+			Description: m.Description,
+			Duration:    m.Duration,
+			Genre:       m.Genre,
+			ReleaseDate: m.CreatedAt.Format(time.RFC3339),
+		})
+	}
+
+	// Calculate if there are more pages
+	hasMore := int64(offset+limitNum) < total
+
+	return &model.MoviesResponse{
+		Movies:     result,
+		TotalCount: int(total),
+		HasMore:    hasMore,
+	}, nil
 }
 
 // Movie is the resolver for the movie field.
 func (r *queryResolver) Movie(ctx context.Context, id string) (*model.Movie, error) {
-	panic(fmt.Errorf("not implemented: Movie - movie"))
+	movieID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid movie ID")
+	}
+
+	movie, err := r.movieService.GetMovieByID(uint(movieID))
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Movie{
+		ID:          strconv.FormatUint(uint64(movie.ID), 10),
+		Title:       movie.Title,
+		Description: movie.Description,
+		Duration:    movie.Duration,
+		Genre:       movie.Genre,
+		ReleaseDate: movie.CreatedAt.Format(time.RFC3339),
+	}, nil
 }
 
 // Showtimes is the resolver for the showtimes field.
@@ -103,15 +160,3 @@ func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subsc
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *subscriptionResolver) Dummy(ctx context.Context) (<-chan string, error) {
-	panic(fmt.Errorf("not implemented: Dummy - dummy"))
-}
-*/

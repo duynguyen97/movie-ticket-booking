@@ -3,8 +3,8 @@
 type Query {
   # Health check query
   ping: String!
-  # Get all movies
-  movies: [Movie!]!
+  # Get all movies with pagination
+  movies(page: Int = 1, limit: Int = 10): MoviesResponse!
   # Get a specific movie by ID
   movie(id: ID!): Movie
   # Get all showtimes
@@ -123,4 +123,10 @@ type User {
   name: String!
   phone: String!
   bookings: [Booking!]!
+}
+
+type MoviesResponse {
+  movies: [Movie!]!
+  totalCount: Int!
+  hasMore: Boolean!
 }

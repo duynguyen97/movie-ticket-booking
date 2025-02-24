@@ -31,11 +31,12 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// Initialize auth service
+	// Initialize services
 	authService := services.NewAuthService(postgresDB.DB, "your-jwt-secret-key") // Replace with actual secret from config
+	movieService := services.NewMovieService(postgresDB.DB)
 
-	// Create resolver with auth service
-	resolver := graph.NewResolver(authService)
+	// Create resolver with services
+	resolver := graph.NewResolver(authService, movieService)
 
 	// Create GraphQL server
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))

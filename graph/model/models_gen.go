@@ -50,6 +50,12 @@ type Movie struct {
 	Showtimes   []*Showtime `json:"showtimes"`
 }
 
+type MoviesResponse struct {
+	Movies     []*Movie `json:"movies"`
+	TotalCount int      `json:"totalCount"`
+	HasMore    bool     `json:"hasMore"`
+}
+
 type Mutation struct {
 }
 
